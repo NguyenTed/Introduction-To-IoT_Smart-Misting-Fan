@@ -2,8 +2,12 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import routes from "./src/routes/index.js";
+import mqttClient from "./src/config/mqtt.js";
+import connectDB from "./src/config/db.js";
 
 const app = express();
+
+connectDB();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -12,6 +16,8 @@ const __dirname = path.dirname(__filename);
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "/src/views"));
+
+app.locals.mqttClient = mqttClient;
 
 app.use(routes);
 
