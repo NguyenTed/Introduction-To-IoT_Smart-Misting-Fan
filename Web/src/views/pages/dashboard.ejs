@@ -1,1 +1,47 @@
-<h1>Hello world!</h1>
+<div class="w-10/12">
+  <canvas id="myChart" class="w-full h-64"></canvas>
+</div>
+
+<script>
+  const ctx = document.getElementById("myChart").getContext("2d");
+
+  const chartData = {
+        labels: <%- JSON.stringify(chartData.labels) %>,
+        datasets: [
+          {
+            label: "Temperature",
+            data: <%- JSON.stringify(chartData.temperature) %>,
+            borderColor: "#3b82f6",
+            backgroundColor: "rgba(59, 130, 246, 0.2)",
+            borderWidth: 2,
+            fill: true,
+          },
+          {
+            label: "Humidity",
+            data: <%- JSON.stringify(chartData.humidity) %>,
+            borderColor: "#f97316",
+            backgroundColor: "rgba(249, 115, 22, 0.2)",
+            borderWidth: 2,
+            fill: true,
+          },
+        ],
+      };
+
+      const myChart = new Chart(ctx, {
+        type: "line",
+        data: chartData,
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: "top",
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+</script>

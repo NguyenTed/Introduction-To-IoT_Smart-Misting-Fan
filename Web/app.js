@@ -1,11 +1,13 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import http from "http";
 import routes from "./src/routes/index.js";
-import mqttClient from "./src/config/mqtt.js";
 import connectDB from "./src/config/db.js";
+import { mqttClient } from "./src/config/mqtt.js";
 
 const app = express();
+const server = http.createServer(app);
 
 connectDB();
 
