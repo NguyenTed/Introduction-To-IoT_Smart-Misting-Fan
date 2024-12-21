@@ -2,12 +2,13 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import http from "http";
+import { configureSocketIO } from "./src/config/socket.js";
 import routes from "./src/routes/index.js";
 import connectDB from "./src/config/db.js";
 import { mqttClient } from "./src/config/mqtt.js";
 
 const app = express();
-const server = http.createServer(app);
+const server = http.createServer(app); // Create HTTP server
 
 connectDB();
 
@@ -18,6 +19,7 @@ const __dirname = path.dirname(__filename);
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "/src/views"));
+const io = configureSocketIO(server);
 
 app.locals.mqttClient = mqttClient;
 
@@ -34,4 +36,4 @@ app.use((error, req, res, next) => {
   res.render("error", { message: error.message });
 });
 
-export default app;
+export { server, app, io };

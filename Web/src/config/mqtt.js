@@ -1,6 +1,7 @@
 import mqtt from "mqtt";
 import dotenv from "dotenv";
 import { DHT } from "../models/index.js";
+import { io } from "../../app.js";
 dotenv.config();
 
 // MQTT connection
@@ -31,6 +32,9 @@ mqttClient.on("message", async (topic, message) => {
       temperature: data[0],
       humidity: data[1],
     };
+    io.emit("dht_data", realTimeData);
+
+    console.log("Real-time data sent:", realTimeData);
   }
 
   // Save data to the database at the top of the hour
