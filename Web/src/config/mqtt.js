@@ -33,12 +33,10 @@ mqttClient.on("message", async (topic, message) => {
       humidity: data[1],
     };
     io.emit("dht_data", realTimeData);
-
-    console.log("Real-time data sent:", realTimeData);
   }
 
   // Save data to the database at the top of the hour
-  if (currentMinutes === 56 && currentSeconds === 30) {
+  if (currentMinutes === 28 && currentSeconds === 50) {
     if (
       !lastSaveTimestamp ||
       lastSaveTimestamp.getHours() !== currentTime.getHours()
@@ -46,12 +44,35 @@ mqttClient.on("message", async (topic, message) => {
       try {
         if (topic === "22127142/DHT") {
           const data = payload.split(",");
-          const dht = new DHT({
-            date: currentTime,
-            temperature: data[0],
-            humidity: data[1],
+          const startTime = new Date(currentTime);
+          const endTime = new Date(currentTime);
+          startTime.setHours(0, 0, 0, 0);
+          endTime.setHours(23, 59, 59, 999);
+          console.log(startTime);
+          console.log(endTime);
+          const dht = await DHT.findOne({
+            date: { $gte: startTime, $lte: endTime },
           });
-          await dht.save();
+          if (dht) {
+            console.log("Data already exists");
+            const count = dht.count + 1;
+            dht.temperature = Math.ceil(
+              (dht.temperature * dht.count + Number(data[0])) / count
+            );
+            dht.humidity = Math.ceil(
+              (dht.humidity * dht.count + Number(data[1])) / count
+            );
+            dht.count = count;
+            await dht.save();
+          } else {
+            console.log("Data yet exists");
+            const newDHT = new DHT({
+              date: currentTime,
+              temperature: data[0],
+              humidity: data[1],
+            });
+            await newDHT.save();
+          }
 
           console.log(`DHT data saved at ${currentTime}: ${payload}`);
         }
@@ -61,8 +82,6 @@ mqttClient.on("message", async (topic, message) => {
         console.error("Failed to save data to database:", err);
       }
     }
-  } else {
-    console.log("Skipping");
   }
 });
 
