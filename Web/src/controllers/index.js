@@ -16,16 +16,27 @@ export const renderDashboardPage = async (req, res) => {
   const temperatureData = dhtData.map((data) => data.temperature);
   const humidityData = dhtData.map((data) => data.humidity);
 
-  console.log(dataLabels);
-  console.log(temperatureData);
-  console.log(humidityData);
+  const averageTemperature =
+    Math.round(
+      (temperatureData.reduce((a, b) => a + b, 0) / temperatureData.length) *
+        100 +
+        Number.EPSILON
+    ) / 100 || 0;
+  const averageHumidity =
+    Math.round(
+      (humidityData.reduce((a, b) => a + b, 0) / humidityData.length) * 100 +
+        Number.EPSILON
+    ) / 100 || 0;
 
   const chartData = {
     labels: dataLabels,
     temperature: temperatureData,
     humidity: humidityData,
   };
-  res.render("layouts/main-layout2", {
+  res.render("layouts/main-layout", {
+    body: "../pages/dashboard.ejs",
     chartData,
+    averageTemperature,
+    averageHumidity,
   });
 };

@@ -8,16 +8,25 @@ export const configureSocketIO = (server) => {
   io = new SocketIOServer(server);
 
   io.on("connection", (socket) => {
-    console.log("A user connected:", socket.id);
-
     socket.on("toggle_misting_fan", () => {
       console.log("Toggle misting fan");
       mqttClient.publish("22127406/FAN", "testing");
     });
 
-    socket.on("disconnect", () => {
-      console.log("A user disconnected:", socket.id);
+    socket.on("change_led_value", (data) => {
+      console.log("Change led value");
+      const { led_val } = data;
+      mqttClient.publish("22127406/LED_VALUE", led_val.toString());
     });
+
+    socket.on("toggle_auto_led", (data) => {
+      console.log("Toggle auto led");
+      const { auto_led } = data;
+      console.log(auto_led);
+      mqttClient.publish("22127406/AUTO_LED", auto_led ? "1" : "0");
+    });
+
+    socket.on("disconnect", () => {});
   });
 
   return io;
