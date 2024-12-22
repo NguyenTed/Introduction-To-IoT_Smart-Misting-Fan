@@ -1,6 +1,6 @@
 import mqtt from "mqtt";
 import dotenv from "dotenv";
-import { DHT } from "../models/index.js";
+import { DHT, Activity } from "../models/index.js";
 import { io } from "../../app.js";
 dotenv.config();
 
@@ -14,6 +14,10 @@ mqttClient.on("connect", () => {
   console.log("Connected to MQTT broker");
 
   mqttClient.subscribe("22127142/DHT", (err) => {
+    if (err) console.error("Failed to subscribe to DHT topic:", err);
+  });
+
+  mqttClient.subscribe("22127142/ACTIVITY", (err) => {
     if (err) console.error("Failed to subscribe to DHT topic:", err);
   });
 });
@@ -33,6 +37,15 @@ mqttClient.on("message", async (topic, message) => {
       humidity: data[1],
     };
     io.emit("dht_data", realTimeData);
+  } else if (topic === "22127142/ACTIVITY") {
+    const newActivity = Activity({
+      date: currentTime,
+      activity: payload,
+    });
+    await newActivity.save();
+    console.log(newActivity);
+    console.log(newActivity.date);
+    io.emit("activity", { date: currentTime, activity: payload });
   }
 
   // Save data to the database at the top of the hour

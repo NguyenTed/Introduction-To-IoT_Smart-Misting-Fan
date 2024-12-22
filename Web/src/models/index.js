@@ -14,5 +14,11 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
 });
 
+const activitySchema = new mongoose.Schema({
+  date: { type: Date, required: true },
+  activity: { type: String, required: true },
+});
+
 export const DHT = mongoose.model("DHT", dhtSchema);
 export const User = mongoose.model("User", userSchema);
+export const Activity = mongoose.model("Activity", activitySchema);

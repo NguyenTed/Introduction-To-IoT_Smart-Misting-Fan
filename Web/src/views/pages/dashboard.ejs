@@ -163,10 +163,26 @@
   </div>
   <div class="w-1/5 flex flex-col gap-5">
     <div
-      class="bg-gray-800 justify-center shadow-2xl rounded-xl flex flex-row min-h-[686px] py-2 px-6"
+      class="bg-gray-800 items-center shadow-2xl rounded-xl flex flex-col min-h-[686px] py-2 px-6"
     >
-      <div class="flex flex-row ml-auto">
+      <div class="flex flex-row ml-auto mb-5">
         <h3 class="font-bold text-white text-4xl">Activity</h3>
+      </div>
+      <div id="activity-container" class="flex flex-col gap-3">
+        <% activityData.forEach(activity => { %>
+        <div
+          class="block max-w-sm p-6 bg-gray-600 rounded-lg shadow hover:bg-[#007bff]"
+        >
+          <h5
+            class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white"
+          >
+            <%- activity.activity %>
+          </h5>
+          <p class="font-normal text-sm text-gray-300">
+            At: <%- activity.date %>
+          </p>
+        </div>
+        <% }) %>
       </div>
     </div>
   </div>

@@ -15,12 +15,57 @@
       referrerpolicy="no-referrer"
     />
     <script>
+      function formatDateTime(isoString) {
+        const date = new Date(isoString);
+
+        // Extract hours, minutes, and seconds with padding
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+
+        // Extract day, month, and year with padding for day and month
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+        const year = date.getFullYear();
+
+        // Format the date and time into the desired output format
+        return `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
+      }
+
       const socket = io();
       socket.on("dht_data", (data) => {
         document.getElementById(
           "temperature"
         ).textContent = `${data.temperature}°C`;
         document.getElementById("humidity").textContent = `${data.humidity}%`;
+      });
+
+      socket.on("activity", (data) => {
+        console.log("Received MQTT Data:", data);
+        const container = document.getElementById("activity-container");
+
+        // Create a new item
+        const newItem = document.createElement("div");
+        newItem.className =
+          "block max-w-sm p-6 bg-gray-600 rounded-lg shadow hover:bg-[#007bff]";
+
+        // Add content to the new item
+        newItem.innerHTML = `
+          <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+            ${data.activity}
+          </h5>
+          <p class="font-normal text-sm text-gray-300">
+            At: ${formatDateTime(data.date)}
+          </p>
+        `; // Adjust based on the structure of your data
+
+        // Prepend the new item
+        container.prepend(newItem);
+
+        // Check if the container has more than 10 items
+        if (container.children.length > 5) {
+          container.removeChild(container.lastElementChild);
+        }
       });
     </script>
   </head>
@@ -37,12 +82,14 @@
 
         <div class="flex max-lg:ml-auto space-x-4">
           <button
-            class="px-4 py-2 text-sm rounded-full font-bold text-gray-500 border-2 bg-transparent hover:bg-gray-50 transition-all ease-in-out duration-300"
+            class="px-4 py-2 text-sm rounded-full font-bold text-gray-500 border-2 bg-gray-50 hover:bg-transparent transition-all ease-in-out duration-300"
+            onclick="window.location.href='/login'"
           >
             Login
           </button>
           <button
             class="px-4 py-2 text-sm rounded-full font-bold text-white border-2 border-[#007bff] bg-[#007bff] transition-all ease-in-out duration-300 hover:bg-transparent hover:text-[#007bff]"
+            onclick="window.location.href='/signup'"
           >
             Sign up
           </button>
