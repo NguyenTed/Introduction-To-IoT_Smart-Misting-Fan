@@ -26,6 +26,7 @@ mqttClient.on("message", async (topic, message) => {
   const currentTime = new Date();
   const currentMinutes = currentTime.getMinutes();
   const currentSeconds = currentTime.getSeconds();
+  const currentMilliseconds = currentTime.getMilliseconds();
   const payload = message.toString();
 
   // Parse the DHT message
@@ -33,8 +34,8 @@ mqttClient.on("message", async (topic, message) => {
     const data = payload.split(",");
     const realTimeData = {
       date: currentTime,
-      temperature: data[0],
-      humidity: data[1],
+      temperature: Math.round(Number(data[0]) * 100 + Number.EPSILON) / 100,
+      humidity: Math.round(Number(data[1]) * 100 + Number.EPSILON) / 100,
     };
     io.emit("dht_data", realTimeData);
   } else if (topic === "22127142/ACTIVITY") {
@@ -49,7 +50,11 @@ mqttClient.on("message", async (topic, message) => {
   }
 
   // Save data to the database at the top of the hour
-  if (currentMinutes === 28 && currentSeconds === 50) {
+  if (
+    currentMinutes === 45 &&
+    currentSeconds === 15 &&
+    currentMilliseconds < 300
+  ) {
     if (
       !lastSaveTimestamp ||
       lastSaveTimestamp.getHours() !== currentTime.getHours()
@@ -76,6 +81,7 @@ mqttClient.on("message", async (topic, message) => {
               (dht.humidity * dht.count + Number(data[1])) / count
             );
             dht.count = count;
+            console.log(dht.count);
             await dht.save();
           } else {
             console.log("Data yet exists");
@@ -83,6 +89,7 @@ mqttClient.on("message", async (topic, message) => {
               date: currentTime,
               temperature: data[0],
               humidity: data[1],
+              count: 1,
             });
             await newDHT.save();
           }

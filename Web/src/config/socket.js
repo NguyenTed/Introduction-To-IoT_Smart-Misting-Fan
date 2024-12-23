@@ -10,7 +10,7 @@ export const configureSocketIO = (server) => {
   io.on("connection", (socket) => {
     socket.on("toggle_misting_fan", () => {
       console.log("Toggle misting fan");
-      mqttClient.publish("22127406/FAN", "testing");
+      mqttClient.publish("22127406/FAN", "toggle");
     });
 
     socket.on("change_led_value", (data) => {

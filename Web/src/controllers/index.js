@@ -27,6 +27,11 @@ const formatDateTime = (isoString) => {
 };
 
 export const renderDashboardPage = async (req, res) => {
+  const authenticated = req.isAuthenticated();
+  if (!authenticated) {
+    return res.redirect("/users/login");
+  }
+
   const dhtData = await DHT.find({}).sort({ date: 1 }).limit(7);
   const activities = await Activity.find({}).sort({ date: -1 }).limit(5);
 
@@ -65,5 +70,6 @@ export const renderDashboardPage = async (req, res) => {
     averageTemperature,
     averageHumidity,
     activityData,
+    authenticated,
   });
 };

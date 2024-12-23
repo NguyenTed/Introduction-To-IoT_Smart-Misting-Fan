@@ -4,7 +4,7 @@ const dhtSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   temperature: { type: Number, required: true },
   humidity: { type: Number, required: true },
-  count: { type: Number, required: true, default: 1 },
+  count: { type: Number, required: true },
 });
 
 const userSchema = new mongoose.Schema({
