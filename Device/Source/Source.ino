@@ -1,22 +1,89 @@
 #include "DHT.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-#include<string.h>
+#include <string.h>
+#include <ESP8266WiFi.h>
+#include <WiFiManager.h>
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <PubSubClient.h>
+#include <string>
 
-#define DHT_PIN A0
+#define DHT_PIN D7
 #define BUZZER_BTN_PIN D0
 #define FAN_PIN D3
 #define MIST_PIN D4
 #define LIQUID_LEVEL_SENSOR_PIN D5
-#define LEDS_BTN_PIN D6
-#define PHOTORESISTOR_PIN D7
+#define LEDS_BTN_PIN D1
+#define PHOTORESISTOR_PIN A0
 #define LED_PIN D8
-#define MIST_BTN_PIN D9
+#define MIST_BTN_PIN D6
 #define BUZZER_PIN D10
 
-LiquidCrystal_I2C lcd(0x3F,20,4);
+const char* mqtt_server = "broker.mqtt-dashboard.com";
+const int mqtt_port = 1883;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
 DHT dht(DHT_PIN, DHT11);
 
+bool led = false;
+bool liquid = false;
+bool button_buzz = false;
+bool fan_mist = false;
+bool auto_led = true;
+int led_value = 255;
+bool fan = false;
+
+
+void mqttCallback(char* topic, byte* payload, unsigned int length)
+{
+
+  payload[length] = '\0';
+  if (strcmp(topic, "22127406/AUTO_LED") == 0)
+  {
+    auto_led = (strcmp((char*)payload, "1") == 0);
+  }
+  else if (strcmp(topic, "22127406/LED_VALUE") == 0)
+  {
+    led_value = std::stoi((char*)payload);
+  }
+  else if (strcmp(topic, "22127406/FAN") == 0)
+  {
+    fan_mist = !fan_mist;
+    if (fan_mist)
+    {
+      sendDataToServer("22127142/ACTIVITY", "Misting fan on");
+    }
+    else
+    {
+      sendDataToServer("22127142/ACTIVITY", "Misting fan off");
+    }
+  }
+}
+void connectMqttServer()
+{
+  while (!client.connect("22127142"))
+  {
+    delay(5000);
+  }
+  client.subscribe("22127406/AUTO_LED");
+  client.subscribe("22127406/LED_VALUE");
+  client.subscribe("22127406/FAN");
+}
+void connectServer()
+{
+  if (!client.connected())
+  {
+    connectMqttServer();
+  }
+  client.loop();
+}
+void sendDataToServer(char* topic, char* msg)
+{
+  client.publish(topic, msg);
+}
 int readPhotoresistor() {
   return digitalRead(PHOTORESISTOR_PIN);
 }
@@ -29,25 +96,20 @@ float readTemperature() {
   return dht.readTemperature();
 }
 
-void LCD_write(const String& str, int row, int col) {
-  lcd.setCursor(0, 0);
-}
-
 void buzzer() {
   for(int i = 0; i < 180; i++) {
     float sinVal = (sin(i * (3.1412 / 180)));
     int toneVal = 2000 + (int(sinVal * 1000));
-    tone(BUZZ_PIN, toneVal);
+    tone(BUZZER_PIN, toneVal);
     delay(2);
   }
 }
+void stop_buzzer()
+{
+  noTone(BUZZER_PIN);
+}
 
 void setup() {
-  Serial.begin();
-  Serial.println("Setting up");
-  Serial.end();
-
-  pinMode(DHT_PIN, INPUT);
   pinMode(BUZZER_BTN_PIN, INPUT);
   pinMode(FAN_PIN, OUTPUT);
   pinMode(MIST_PIN, OUTPUT);
@@ -58,11 +120,88 @@ void setup() {
   pinMode(MIST_BTN_PIN, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
 
-  lcd.init();
-  lcd.backlight();
   dht.begin();
+
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("My Access Point");
+
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(mqttCallback);
 }
 
 void loop() {
-  
+  connectServer();
+
+  int p = analogRead(PHOTORESISTOR_PIN);
+  std::string msg1 = std::to_string(p);
+  sendDataToServer("22127142/PHOTO", (char*)msg1.c_str());
+  if (auto_led)
+  {
+    if (p > 1020)
+    {
+      led = true;
+    }
+  }
+  float h = readHumidity();
+  std::string msg2 = std::to_string(h);
+  float t = readTemperature();
+  std::string msg3 = std::to_string(t);
+  std::string msg = msg3 + ", " + msg2;
+  sendDataToServer("22127142/DHT", (char*)msg.c_str());
+  liquid = digitalRead(LIQUID_LEVEL_SENSOR_PIN);
+  if (liquid == true)
+  {
+    if (button_buzz == false)
+    {
+      button_buzz = digitalRead(BUZZER_BTN_PIN);
+    }
+  }
+  else
+  {
+    button_buzz = false;
+  }
+  if (liquid && !button_buzz)
+  {
+    buzzer();
+  }
+  else
+  {
+    stop_buzzer();
+  }
+
+  if (digitalRead(MIST_BTN_PIN))
+  {
+    fan_mist = !fan_mist;
+    if (fan_mist)
+    {
+      sendDataToServer("22127142/ACTIVITY", "Misting fan on");
+    }
+    else
+    {
+      sendDataToServer("22127142/ACTIVITY", "Misting fan off");
+    }
+  }
+  if (fan_mist)
+  {
+    digitalWrite(FAN_PIN, HIGH);
+    digitalWrite(MIST_PIN, HIGH);
+  } 
+  else
+  {
+    digitalWrite(FAN_PIN, LOW);
+    digitalWrite(MIST_PIN, LOW);
+  }
+  if (digitalRead(LEDS_BTN_PIN))
+  {
+
+    led = !led;
+  }
+  if (led)
+  {
+    analogWrite(LED_PIN, led_value);
+  } 
+  else
+  {
+    digitalWrite(LED_PIN, LOW);
+  }
 }
