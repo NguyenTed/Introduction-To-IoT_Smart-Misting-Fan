@@ -8,11 +8,11 @@
 #include <ESP8266WebServer.h>
 #include <PubSubClient.h>
 #include <string>
+#include <Bounce2.h>
 
 #define DHT_PIN D7
 #define BUZZER_BTN_PIN D0
-#define FAN_PIN D3
-#define MIST_PIN D4
+#define MIST_FAN_PIN D4
 #define LIQUID_LEVEL_SENSOR_PIN D5
 #define LEDS_BTN_PIN D1
 #define PHOTORESISTOR_PIN A0
@@ -36,6 +36,10 @@ bool auto_led = true;
 int led_value = 255;
 bool fan = false;
 
+const int numButtons = 3; // Số lượng nút
+const int buttonPins[numButtons] = {D0, D1, D6}; // Chân kết nối nút
+
+Bounce debouncers[numButtons];
 
 void mqttCallback(char* topic, byte* payload, unsigned int length)
 {
@@ -111,14 +115,19 @@ void stop_buzzer()
 
 void setup() {
   pinMode(BUZZER_BTN_PIN, INPUT);
-  pinMode(FAN_PIN, OUTPUT);
-  pinMode(MIST_PIN, OUTPUT);
+  pinMode(MIST_FAN_PIN, OUTPUT);
   pinMode(LIQUID_LEVEL_SENSOR_PIN, INPUT);
   pinMode(LEDS_BTN_PIN, INPUT);
   pinMode(PHOTORESISTOR_PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
   pinMode(MIST_BTN_PIN, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
+
+  for (int i = 0; i < numButtons; i++) 
+  {
+    debouncers[i].attach(buttonPins[i]); // Kết nối từng chân với Bounce2
+    debouncers[i].interval(50);          // Đặt thời gian debounce 50ms
+  }
 
   dht.begin();
 
@@ -130,6 +139,8 @@ void setup() {
 }
 
 void loop() {
+  for (int i = 0; i < numButtons; i++) 
+    debouncers[i].update();
   connectServer();
 
   int p = analogRead(PHOTORESISTOR_PIN);
@@ -153,7 +164,7 @@ void loop() {
   {
     if (button_buzz == false)
     {
-      button_buzz = digitalRead(BUZZER_BTN_PIN);
+      button_buzz = debouncers[0].rose();
     }
   }
   else
@@ -169,7 +180,7 @@ void loop() {
     stop_buzzer();
   }
 
-  if (digitalRead(MIST_BTN_PIN))
+  if (debouncers[2].rose())
   {
     fan_mist = !fan_mist;
     if (fan_mist)
@@ -183,15 +194,13 @@ void loop() {
   }
   if (fan_mist)
   {
-    digitalWrite(FAN_PIN, HIGH);
-    digitalWrite(MIST_PIN, HIGH);
+    digitalWrite(MIST_FAN_PIN, HIGH);
   } 
   else
   {
-    digitalWrite(FAN_PIN, LOW);
-    digitalWrite(MIST_PIN, LOW);
+    digitalWrite(MIST_FAN_PIN, LOW);
   }
-  if (digitalRead(LEDS_BTN_PIN))
+  if (debouncers[1].rose())
   {
 
     led = !led;
