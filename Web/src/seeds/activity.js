@@ -8,9 +8,9 @@ export const seedActivity = async () => {
     const activity = new Activity({
       date: getRandomDate(
         new Date("2024-12-18T00:00:00Z"),
-        new Date("2024-12-21T00:00:00Z")
+        new Date("2024-12-23T00:00:00Z")
       ),
-      activity: "Misting fan turned on",
+      activity: "Misting fan on",
     });
     await activity.save();
   }
