@@ -9,6 +9,7 @@
 #include <PubSubClient.h>
 #include <string>
 #include <Bounce2.h>
+#include "Pushsafer.h"
 
 #define DHT_PIN D7
 #define BUZZER_BTN_PIN D0
@@ -66,6 +67,39 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
     }
   }
 }
+
+// Pushsafer API Key
+#define PushsaferKey "uT4P40iz727TF01BIjer"
+Pushsafer pushsafer("uT4P40iz727TF01BIjer", espClient);
+
+// Hàm gửi thông báo
+void sendPushsaferNotification(const String &title, const String &message) {
+  struct PushSaferInput input;
+  input.message = "This is a test message";
+  input.title = "Hello!";
+  input.sound = "8";
+  input.vibration = "1";
+  input.icon = "1";
+  input.iconcolor = "#FFCCCC";
+  input.priority = "1";
+  input.device = "a";
+  input.url = "https://www.pushsafer.com";
+  input.urlTitle = "Open Pushsafer.com";
+  input.picture = "";
+  input.picture2 = "";
+  input.picture3 = "";
+  input.time2live = "";
+  input.retry = "";
+  input.expire = "";
+  input.confirm = "";
+  input.answer = "";
+  input.answeroptions = "";
+  input.answerforce = "";
+
+  pushsafer.sendEvent(input);
+}
+
+
 void connectMqttServer()
 {
   while (!client.connect("22127142"))
@@ -122,6 +156,8 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(MIST_BTN_PIN, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
+
+  pushsafer.debug = true;
 
   for (int i = 0; i < numButtons; i++) 
   {
@@ -186,6 +222,7 @@ void loop() {
     if (fan_mist)
     {
       sendDataToServer("22127142/ACTIVITY", "Misting fan on");
+      sendPushsaferNotification("Hello", "World");
     }
     else
     {
